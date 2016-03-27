@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8" />
+  <title>Phaser - Making your first game, part 9</title>
+	<link rel="stylesheet" type="text/css" href="css/style.css" />
+  <script type="text/javascript" src="phaser/build/phaser.js"></script>
+	<script type="text/javascript" src="js/lib/socket.io.js"></script>
+</head>
+<body>
+  <input id='send' />
+  <ul style="float:right" id='list'></ul>
+
+<script type="text/javascript">
+    var testroom = io('/test');
+    var id, player;
+
+    // socket.on('getdata', function(msg){
+    //   console.log(msg);
+    // });
+
+    // function send(msg){
+    //   socket.emit('message', msg);
+    // }
+
+    var inp = document.getElementById('send');
+
+    inp.onclick = function go(){
+      //send(inp.value);
+    }
+
+
+    var game = new Phaser.Game(800, 600, Phaser.CANVAS, 'phaser-example', { preload: preload, create: create , update: update});
+
+var friendAndFoe;
+var enemies;
+var players = [];
+var cursors;
+
+function preload() {
+    game.load.image('baddie', 'assets/star.png');
+}
+
+function create() {
+
+    cursors = game.input.keyboard.createCursorKeys();
+
+    var x = game.rnd.integerInRange(10, 500);
+    var y = game.rnd.integerInRange(10, 700);
+    player = game.add.sprite(x , y , 'baddie');  // enemies.create
+    testroom.emit('get' , {"id": testroom.id , "x": x , "y": y } );
+
+    testroom.on('data', function(msg){
+      for(var i in msg){
+        players.push({"obj": game.add.sprite(msg[i].x , msg[i].y , 'baddie'), "id": msg[i].id });
+      }
+    });
+
+    testroom.on('update', function(msg){
+      players.push( { "obj": game.add.sprite(msg.x , msg.y , 'baddie'), "id": msg.id } );
+    });
+
+    testroom.on('delete', function(msg){
+      console.log('delete query');
+      for ( var n in players){
+        if ( players[n].id == msg){
+          console.log('find');
+          players[n].obj.kill();
+          delete players[n];
+        }
+      }
+    });
+    // testroom.on('connection', function(socket){
+    //   socket.on('disconnected', function(msg){
+    //     //alert(msg);
+    //   });
+    // });
+
+    //var ufo = game.add.sprite(200, 240, 'ufo');
+}
+
+function update() {
+    //  For example this checks if the up or down keys are pressed and moves the camera accordingly.
+    if (cursors.up.isDown){
+            player.y -= 4;
+            testroom.emit('pos', 'y-');
+    }else if (cursors.down.isDown){
+            player.y += 4;
+            testroom.emit('pos', 'y+');
+    }if (cursors.left.isDown){
+        player.x -= 4;
+        testroom.emit('pos', 'x-');
+    }else if (cursors.right.isDown){
+        player.x += 4;
+        testroom.emit('pos', 'x+');
+
+    }
+}
+</script>
+</body>
+</html>
